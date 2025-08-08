@@ -1,0 +1,51 @@
+@startuml FiftyOne Architecture
+
+skinparam backgroundColor transparent
+skinparam componentStyle uml2
+
+package "FiftyOne Platform" {
+  package "Frontend" {
+    [Web UI] as ui
+    [React Components] as components
+    [State Management] as state
+    [GraphQL Client] as graphqlClient
+  }
+
+  package "Backend" {
+    [FiftyOne Server] as server
+    [Core Engine] as core
+    [Dataset Management] as datasets
+    [Model Zoo] as models
+    [GraphQL API] as graphql
+    database "MongoDB" as db
+  }
+
+  package "Plugins" {
+    [Operators] as ops
+    [Panels] as panels
+    [Custom Extensions] as ext
+  }
+}
+
+[External ML Models] as extModels
+[Data Sources] as data
+
+ui --> components
+components --> state
+components --> graphqlClient
+graphqlClient --> graphql
+
+server --> core
+core --> datasets
+core --> models
+core --> db
+graphql --> core
+
+ops --> core
+panels --> ui
+ext --> core
+
+extModels --> models
+data --> datasets
+
+@enduml

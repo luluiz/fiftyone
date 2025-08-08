@@ -1,0 +1,49 @@
+@startuml Core Classes
+
+skinparam backgroundColor transparent
+skinparam classAttributeIconSize 0
+
+abstract class Dataset {
+  +name: String
+  +persistent: Boolean
+  +info: Dict
+  +add_sample()
+  +remove_sample()
+  +filter()
+  +aggregate()
+}
+
+class Sample {
+  +id: String
+  +filepath: String
+  +metadata: Dict
+  +load()
+  +save()
+}
+
+class DatasetView {
+  +stages: List
+  +filtered: Boolean
+  +add_stage()
+  +remove_stage()
+}
+
+class Field {
+  +name: String
+  +type: String
+  +description: String
+  +validate()
+}
+
+class Label {
+  +type: String
+  +confidence: Float
+  +properties: Dict
+}
+
+Dataset o-- "*" Sample
+Dataset <|-- DatasetView
+Sample o-- "*" Field
+Field <|-- Label
+
+@enduml

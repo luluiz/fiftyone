@@ -1,0 +1,28 @@
+@startuml Filter Workflow
+
+actor User
+participant "Web UI" as ui
+participant "State Management" as state
+participant "GraphQL Client" as client
+participant "Backend Server" as server
+participant "Dataset Manager" as dm
+database MongoDB as db
+
+User -> ui: Click "Add Filter"
+ui -> state: Update Filter State
+state -> ui: Render Filter Dialog
+
+User -> ui: Configure Filter Parameters
+ui -> client: Send Filter Query
+client -> server: GraphQL Mutation
+
+server -> dm: Apply Filter
+dm -> db: Query Data
+db --> dm: Return Results
+dm --> server: Process Results
+
+server --> client: Return Updated Dataset
+client --> state: Update Dataset State
+state --> ui: Update Visualization
+
+@enduml
