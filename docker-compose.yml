@@ -1,0 +1,116 @@
+# Copyright 2017-2025, Voxel51, Inc.
+# Modifications Copyright 2025, luluiz
+# voxel51.com
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+version: '3.8'
+
+services:
+  # MongoDB Database Service
+  mongodb:
+    build:
+      context: ./docker/mongodb
+      dockerfile: Dockerfile
+    container_name: fiftyone-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=fiftyone123
+      - MONGO_INITDB_DATABASE=fiftyone
+    networks:
+      - fiftyone-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--host", "localhost", "--port", "27017", "-u", "fiftyone_user", "-p", "fiftyone_password", "--authenticationDatabase", "fiftyone", "--eval", "db.runCommand({ping: 1})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # FiftyOne Backend Service
+  backend:
+    build:
+      context: ./docker/backend
+      dockerfile: Dockerfile
+      args:
+        - FO_VERSION=1.7.2
+        - PYTHON_VERSION=3.11
+    container_name: fiftyone-backend
+    restart: unless-stopped
+    ports:
+      - "5151:5151"
+    volumes:
+      - fiftyone_data:/fiftyone
+      - fiftyone_cache:/root/.fiftyone
+    environment:
+      - FIFTYONE_DATABASE_URI=mongodb://fiftyone_user:fiftyone_password@mongodb:27017/fiftyone
+      - FIFTYONE_DEFAULT_DATASET_DIR=/fiftyone/datasets
+      - FIFTYONE_DATASET_ZOO_DIR=/fiftyone/zoo/datasets
+      - FIFTYONE_MODEL_ZOO_DIR=/fiftyone/zoo/models
+      - FIFTYONE_DEFAULT_APP_ADDRESS=0.0.0.0
+      - FIFTYONE_DEFAULT_APP_PORT=5151
+      - FIFTYONE_DISABLE_SERVICES=true
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - fiftyone-network
+    healthcheck:
+      test: ["CMD", "python", "/health-check.py"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # FiftyOne Frontend Service
+  frontend:
+    build:
+      context: .
+      dockerfile: ./docker/frontend/Dockerfile
+    container_name: fiftyone-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - fiftyone-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+# Named volumes for data persistence
+volumes:
+  mongodb_data:
+    driver: local
+  mongodb_config:
+    driver: local
+  fiftyone_data:
+    driver: local
+  fiftyone_cache:
+    driver: local
+
+# Custom network for service communication
+networks:
+  fiftyone-network:
+    driver: bridge
+    name: fiftyone-network

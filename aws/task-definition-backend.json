@@ -1,0 +1,90 @@
+{
+  "_comment": "Copyright 2017-2025, Voxel51, Inc. Modifications Copyright 2025, luluiz. Licensed under the Apache License, Version 2.0",
+  "family": "fiftyone-backend",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "backend",
+      "image": "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/fiftyone-backend:latest",
+      "portMappings": [
+        {
+          "containerPort": 5151,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "FIFTYONE_DEFAULT_APP_ADDRESS",
+          "value": "0.0.0.0"
+        },
+        {
+          "name": "FIFTYONE_DEFAULT_APP_PORT",
+          "value": "5151"
+        },
+        {
+          "name": "FIFTYONE_DEFAULT_DATASET_DIR",
+          "value": "/fiftyone/datasets"
+        },
+        {
+          "name": "FIFTYONE_DATASET_ZOO_DIR",
+          "value": "/fiftyone/zoo/datasets"
+        },
+        {
+          "name": "FIFTYONE_MODEL_ZOO_DIR",
+          "value": "/fiftyone/zoo/models"
+        },
+        {
+          "name": "FIFTYONE_DISABLE_SERVICES",
+          "value": "true"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "FIFTYONE_DATABASE_URI",
+          "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:fiftyone/database-uri"
+        }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "fiftyone-data",
+          "containerPath": "/fiftyone"
+        }
+      ],
+      "healthCheck": {
+        "command": ["CMD-SHELL", "python /health-check.py || exit 1"],
+        "interval": 30,
+        "timeout": 10,
+        "retries": 3,
+        "startPeriod": 60
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/fiftyone-backend",
+          "awslogs-region": "REGION",
+          "awslogs-stream-prefix": "ecs",
+          "awslogs-create-group": "true"
+        }
+      },
+      "essential": true
+    }
+  ],
+  "volumes": [
+    {
+      "name": "fiftyone-data",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "fs-XXXXXXXXX",
+        "rootDirectory": "/fiftyone",
+        "transitEncryption": "ENABLED",
+        "authorizationConfig": {
+          "accessPointId": "fsap-XXXXXXXXX"
+        }
+      }
+    }
+  ]
+}

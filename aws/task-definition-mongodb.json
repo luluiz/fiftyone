@@ -1,0 +1,74 @@
+{
+  "_comment": "Copyright 2017-2025, Voxel51, Inc. Modifications Copyright 2025, luluiz. Licensed under the Apache License, Version 2.0",
+  "family": "fiftyone-mongodb",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "mongodb",
+      "image": "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/fiftyone-mongodb:latest",
+      "portMappings": [
+        {
+          "containerPort": 27017,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "MONGO_INITDB_DATABASE",
+          "value": "fiftyone"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "MONGO_INITDB_ROOT_USERNAME",
+          "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:fiftyone/mongodb-username"
+        },
+        {
+          "name": "MONGO_INITDB_ROOT_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:fiftyone/mongodb-password"
+        }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "mongodb-data",
+          "containerPath": "/data/db"
+        }
+      ],
+      "healthCheck": {
+        "command": ["CMD-SHELL", "mongo --eval \"db.adminCommand('ismaster')\" || exit 1"],
+        "interval": 30,
+        "timeout": 10,
+        "retries": 3,
+        "startPeriod": 40
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/fiftyone-mongodb",
+          "awslogs-region": "REGION",
+          "awslogs-stream-prefix": "ecs",
+          "awslogs-create-group": "true"
+        }
+      },
+      "essential": true
+    }
+  ],
+  "volumes": [
+    {
+      "name": "mongodb-data",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "fs-XXXXXXXXX",
+        "rootDirectory": "/mongodb",
+        "transitEncryption": "ENABLED",
+        "authorizationConfig": {
+          "accessPointId": "fsap-XXXXXXXXX"
+        }
+      }
+    }
+  ]
+}
