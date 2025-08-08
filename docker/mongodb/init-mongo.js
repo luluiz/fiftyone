@@ -19,14 +19,14 @@
 // MongoDB initialization script for FiftyOne
 db = db.getSiblingDB('fiftyone');
 
-// Create FiftyOne user
+// Create FiftyOne user with root privileges to avoid permission issues
 db.createUser({
   user: 'fiftyone_user',
   pwd: 'fiftyone_password',
   roles: [
     {
-      role: 'readWrite',
-      db: 'fiftyone'
+      role: 'root',
+      db: 'admin'
     }
   ]
 });
