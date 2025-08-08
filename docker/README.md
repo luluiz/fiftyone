@@ -69,6 +69,24 @@ docker-compose down
 docker-compose down -v
 ```
 
+### 5. Zerar banco de dados completamente
+```bash
+# Parar todos os containers
+docker-compose stop
+
+# Remover containers
+docker-compose rm -f
+
+# Remover volumes do MongoDB (perde todos os dados)
+docker volume rm fiftyone_mongodb_data fiftyone_mongodb_config fiftyone_fiftyone_data fiftyone_fiftyone_cache
+
+# Remover dados locais do FiftyOne
+rm -rf ~/fiftyone ~/.fiftyone
+
+# Recriar tudo do zero
+docker-compose up -d
+```
+
 ## Configuração para AWS ECS
 
 ### Task Definitions
@@ -125,6 +143,16 @@ docker exec fiftyone-frontend cat /etc/nginx/conf.d/default.conf
 # Rebuild frontend
 docker-compose build frontend
 docker-compose up -d frontend
+```
+
+### Erro de permissão MongoDB
+```bash
+# Se aparecer erro "not authorized to execute command"
+# Conectar como admin e dar permissões root ao fiftyone_user
+docker exec fiftyone-mongodb mongosh fiftyone -u admin -p fiftyone123 --authenticationDatabase admin --eval "db.grantRolesToUser('fiftyone_user', [{role: 'root', db: 'admin'}])"
+
+# Verificar permissões
+docker exec fiftyone-mongodb mongosh fiftyone -u fiftyone_user -p fiftyone_password --eval "db.runCommand({connectionStatus: 1})"
 ```
 
 ### Erro de memória no build
