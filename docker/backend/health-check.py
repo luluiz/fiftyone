@@ -21,11 +21,14 @@ import sys
 import urllib.request
 import urllib.error
 
+
 def check_health():
     """Check if the FiftyOne backend is healthy."""
     try:
         # Try to connect to the health endpoint
-        response = urllib.request.urlopen('http://localhost:5151/health', timeout=5)
+        response = urllib.request.urlopen(
+            "http://localhost:5151/health", timeout=5
+        )
         if response.getcode() == 200:
             print("Backend is healthy")
             return True
@@ -33,10 +36,11 @@ def check_health():
         pass
     except Exception as e:
         print(f"Health check failed: {e}")
-    
+
     # Fallback: try to import fiftyone and check basic functionality
     try:
         import fiftyone as fo
+
         # Basic connectivity test
         datasets = fo.list_datasets()
         print("FiftyOne backend is responding")
@@ -44,6 +48,7 @@ def check_health():
     except Exception as e:
         print(f"FiftyOne health check failed: {e}")
         return False
+
 
 if __name__ == "__main__":
     if check_health():
